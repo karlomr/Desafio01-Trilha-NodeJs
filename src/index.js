@@ -24,7 +24,7 @@ function checksExistsUserAccount(request, response, next) {
   return next();
 }
 
-function checkExistsTodo(request, response) {
+function checkExistsTodo(request, response, next) {
   const { user } = request;
 
   const { id } = request.params;
@@ -35,7 +35,9 @@ function checkExistsTodo(request, response) {
     return response.status(404).json({ error: "Todo not found!" });
   }
 
-  return response.json(todo);
+  request.todo = todo;
+
+  next()
 }
 
 app.post("/users", (request, response) => {
@@ -86,19 +88,11 @@ app.post("/todos", checksExistsUserAccount, (request, response) => {
 app.put(
   "/todos/:id",
   checksExistsUserAccount,
-  //constcheckExistsTodo,
+  checkExistsTodo,
   (request, response) => {
-    const { user } = request;
-    const { id } = request.params;
+
     const { title, deadline } = request.body;
-
-    //const todo = checkExistsTodo(user,id);
-
-    const todo = user.todos.find((todo) => todo.id === id);
-  
-    if (!todo) {
-      return response.status(404).json({ error: "Todo not found!" });
-    }
+    const { todo } = request;
 
     todo.title = title;
     todo.deadline = new Date(deadline);
@@ -110,19 +104,9 @@ app.put(
 app.patch(
   "/todos/:id/done",
   checksExistsUserAccount,
-  //checkExistsTodo,
+  checkExistsTodo,
   (request, response) => {
-    const { user } = request;
-
-    //const todo = checkExistsTodo(user);
-
-    const { id } = request.params;
-
-    const todo = user.todos.find((todo) => todo.id === id);
-  
-    if (!todo) {
-      return response.status(404).json({ error: "Todo not found!" });
-    }
+    const { todo } = request;
 
     todo.done = true;
 
@@ -133,21 +117,12 @@ app.patch(
 app.delete(
   "/todos/:id",
   checksExistsUserAccount,
-  //checkExistsTodo,
+  checkExistsTodo,
   (request, response) => {
-    const { user } = request;
-    const { id } = request.params;
-    
-    const todoIndex = user.todos.findIndex((todo) => todo.id === id);
+    const { user, todo } = request;
+    const todoIndex = user.todos.indexOf(todo);
 
-    if (todoIndex === -1) {
-      return response.status(404).json({ error: "Todo not found" });
-    }
-
-    user.todos.splice(todoIndex, 1);
-
-    // const todo = checkExistsTodo(user);
-    // user.todos.splice(user.todos.indexOf(todo),1);
+    user.todos.splice(todoIndex,1);
 
     return response.status(204).json();
   }
